@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int              @unique @default(autoincrement())
+  phoneNumber    String           @unique
+  email          String           @unique
+  name           String
+  password       String
+  points         Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  Address        Address[]
+  RedeemedPoints RedeemedPoints[]
+  RedeemedReward RedeemedReward[]
+}
+
+model Address {
+  id                  Int      @unique @default(autoincrement())
+  userId              Int
+  User                User     @relation(fields: [userId], references: [id])
+  ricipentName        String
+  ricipentPhoneNumber String
+  province            String
+  city                String
+  subDistrict         String
+  ward                String
+  detailAddress       String
+  otherDetail         String?
+  isActive            Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model UserCMS {
+  id          Int      @unique @default(autoincrement())
+  merchantId  Int
+  Merchant    Merchant @relation(fields: [merchantId], references: [id])
+  phoneNumber String   @unique
+  email       String   @unique
+  name        String
+  password    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Merchant {
+  id             Int              @unique @default(autoincrement())
+  name           String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  UserCMS        UserCMS[]
+  Reward         Reward[]
+  Point          Point[]
+  RedeemedPoints RedeemedPoints[]
+  RedeemedReward RedeemedReward[]
+}
+
+model Point {
+  id             Int              @unique @default(autoincrement())
+  merchantId     Int
+  Merchant       Merchant         @relation(fields: [merchantId], references: [id])
+  name           String
+  description    String           @db.Text
+  image          String?
+  points         Int
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  RedeemedPoints RedeemedPoints[]
+}
+
+model Reward {
+  id             Int              @unique @default(autoincrement())
+  merchantId     Int
+  Merchant       Merchant         @relation(fields: [merchantId], references: [id])
+  name           String
+  description    String           @db.Text
+  rewardType     RewardType
+  requiredPoints Int
+  image          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  RedeemedReward RedeemedReward[]
+}
+
+enum RewardType {
+  PHYSICAL_GOOD
+  VOUCHER
+}
+
+model RedeemedPoints {
+  id         Int       @unique @default(autoincrement())
+  merchantId Int?
+  Merchant   Merchant? @relation(fields: [merchantId], references: [id])
+  pointId    Int?
+  Point      Point?    @relation(fields: [pointId], references: [id])
+  claimedBy  Int?
+  ClaimedBy  User?     @relation(references: [id], fields: [claimedBy])
+  isClaimed  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model RedeemedReward {
+  id         Int       @unique @default(autoincrement())
+  merchantId Int?
+  Merchant   Merchant? @relation(fields: [merchantId], references: [id])
+  rewardId   Int?
+  Reward     Reward?   @relation(fields: [rewardId], references: [id])
+  claimedBy  Int?
+  ClaimedBy  User?     @relation(references: [id], fields: [claimedBy])
+  shippingId Int?
+  Shipping   Shipping? @relation(fields: [shippingId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Shipping {
+  id                Int              @unique @default(autoincrement())
+  waitingApprovalAt DateTime?
+  processedAt       DateTime?
+  deliveredAt       DateTime?
+  arrivedAt         DateTime?
+  receivedAt        DateTime?
+  status            ShippingStatus
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  RedeemedReward    RedeemedReward[]
+}
+
+enum ShippingStatus {
+  WAITING_APPROVAL
+  PROCESSED
+  DELIVED
+  ARRIVED
+  RECEIVED
+}
