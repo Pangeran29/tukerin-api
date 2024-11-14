@@ -1,5 +1,9 @@
-import { CmsUser } from 'src/cms-user/entities/cms-user.entity';
-import { User } from 'src/user/entities/user.entity';
-import { UserType } from './user.type';
+import { ERole } from '@prisma/client';
 
-export type CurrentUser = { userType: UserType; user: User | CmsUser };
+export type CurrentUser = {
+  sub: string;
+  role: ERole;
+  customerId: null | number;
+  cashierId: null | number;
+  merchantId: null | number;
+};

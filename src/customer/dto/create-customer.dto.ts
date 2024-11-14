@@ -1,44 +1,38 @@
-import { Merchant } from '@prisma/client';
+import { Customer } from '@prisma/client';
 import { IsEmail, IsNotEmpty, IsPositive, IsString } from 'class-validator';
 import { CreateAccountDto } from 'src/account/dto/create-account.dto';
 
-export class CreateMerchantDto
-  extends CreateAccountDto
-  implements Partial<Merchant>
-{
-  @IsString()
+export class CreateCustomerDto extends CreateAccountDto implements Partial<Customer> {
   @IsNotEmpty()
-  businessName: string;
-
   @IsEmail()
-  @IsNotEmpty()
-  businessEmail: string;
-
   @IsString()
-  @IsNotEmpty()
-  businessPhoneNumber: string;
+  email: string;
 
+  @IsNotEmpty()
   @IsString()
-  @IsNotEmpty()
-  businessField: string;
+  name: string;
 
+  @IsNotEmpty()
   @IsString()
-  @IsNotEmpty()
-  businessAddress: string;
+  phoneNumber: string;
 
+  @IsNotEmpty()
+  @IsString()
+  address: string;
+
+  @IsNotEmpty()
   @IsPositive()
-  @IsNotEmpty()
   provinceId: number;
 
-  @IsPositive()
   @IsNotEmpty()
+  @IsPositive()
   regencyId: number;
 
-  @IsPositive()
   @IsNotEmpty()
+  @IsPositive()
   districtId: number;
 
-  @IsPositive()
   @IsNotEmpty()
+  @IsPositive()
   villageId: number;
 }

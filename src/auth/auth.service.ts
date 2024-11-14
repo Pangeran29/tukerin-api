@@ -1,21 +1,16 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { CurrentUser } from '@app/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { AccessToken } from './type/access-token.type';
-import { UserType } from '@app/common';
 
 @Injectable()
 export class AuthService {
   constructor(private readonly jwtService: JwtService) {}
 
-  async getAccessToken(userId: number, userType: UserType): Promise<AccessToken> {
-    const accessTokenPayload = { sub: userId, userType };
+  async getAccessToken(payloadAccessToken: CurrentUser) {
     try {
-      const accessToken = await this.jwtService.signAsync(accessTokenPayload);
-      return { type: 'bearer', accessToken, userType };
+      const accessToken = await this.jwtService.signAsync(payloadAccessToken);
+      return { type: 'bearer', accessToken };
     } catch (error) {
       throw new InternalServerErrorException({
         message: 'Fail to create access token',

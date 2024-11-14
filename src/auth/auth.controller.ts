@@ -4,117 +4,101 @@ import {
   Post,
   Body,
   UseGuards,
-  BadRequestException,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { LoginDto } from './dto/login.dto';
+import { SignInDto } from './dto/sign-in.dto';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard } from '@app/common';
-import { RegisterDto } from './dto/register.dto';
-import { UserService } from 'src/user/user.service';
-import { CmsRegisterDto } from './dto/cms-register.dto';
-import { CmsUserService } from 'src/cms-user/cms-user.service';
-import { CmsLoginDto } from './dto/cms-login.dto';
-import { User } from 'src/user/entities/user.entity';
+import { AccountService } from 'src/account/account.service';
+import { CustomerService } from 'src/customer/customer.service';
+import { MerchantService } from 'src/merchant/merchant.service';
+import { ERole } from '@prisma/client';
+import { TResponseApi } from '@app/common/type/response-api.type';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly userService: UserService,
-    private readonly cmsUserService: CmsUserService,
+    private readonly accountService: AccountService,
+    private readonly customerService: CustomerService,
+    private readonly merchantService: MerchantService,
   ) {}
 
-  @Post('register')
-  async register(@Body() registerDto: RegisterDto) {
-    {
-      const userEmail = await this.userService.findByEmail(registerDto.email);
-      if (userEmail) {
-        throw new BadRequestException("User's email already registered");
-      }
-
-      const userPhoneNumber = await this.userService.findByEmail(
-        registerDto.email,
+  @Post('sign-in')
+  async signIn(@Body() signInDto: SignInDto): Promise<TResponseApi> {
+    const account = await this.accountService.findByUsername(
+      signInDto.username,
+    );
+    if (!account) {
+      throw new UnauthorizedException(
+        'Account either not found or the provided password not valid',
       );
-      if (userPhoneNumber) {
-        throw new BadRequestException("User's phone number already registered");
-      }
-    }
-
-    const hashedPassword = await this.authService.hash(registerDto.password);
-    registerDto.setPassword(hashedPassword);
-
-    return await this.userService.create(registerDto.intoUser());
-  }
-
-  @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    const user = await this.userService.findByEmail(loginDto.email);
-    if (!user) {
-      throw new UnauthorizedException("User's email is not registered");
     }
 
     const validatePassword = await this.authService.compareHashed(
-      loginDto.password,
-      user.password,
+      signInDto.password,
+      account.password,
     );
     if (!validatePassword) {
-      throw new UnauthorizedException("User's password is not valid");
-    }
-
-    const token = await this.authService.getAccessToken(user.id, 'user');
-    return { user, token };
-  }
-
-  @Post('cms-register')
-  async cmsRegister(@Body() cmsRegisterDto: CmsRegisterDto) {
-    {
-      const userEmail = await this.cmsUserService.findByEmail(
-        cmsRegisterDto.email,
+      throw new UnauthorizedException(
+        'Account either not found or the provided password not valid',
       );
-      if (userEmail) {
-        throw new BadRequestException("User's email already registered");
-      }
-
-      const userPhoneNumber = await this.cmsUserService.findByEmail(
-        cmsRegisterDto.email,
-      );
-      if (userPhoneNumber) {
-        throw new BadRequestException("User's phone number already registered");
-      }
     }
 
-    const hashedPassword = await this.authService.hash(cmsRegisterDto.password);
-    cmsRegisterDto.setPassword(hashedPassword);
+    const payloadAccessToken: CurrentUser = {
+      sub: account.username,
+      role: account.role,
+      customerId: null,
+      cashierId: null,
+      merchantId: null,
+    };
 
-    return await this.cmsUserService.create(cmsRegisterDto.intoUser(), cmsRegisterDto.intoMerchant());
-  }
-
-  @Post('cms-login')
-  async cmsLogin(@Body() cmsLoginDto: CmsLoginDto) {
-    const user = await this.cmsUserService.findByEmail(cmsLoginDto.email);
-    if (!user) {
-      throw new UnauthorizedException("User's email is not registered");
+    switch (account.role) {
+      case ERole.CUSTOMER:
+        const customer = await this.customerService.findByAccountId(account.id);
+        if (!customer) {
+          throw new NotFoundException('Customer not found');
+        }
+        payloadAccessToken.customerId = customer.id;
+        break;
+      case ERole.MERCHANT:
+        const merchant = await this.merchantService.findByAccountId(account.id);
+        if (!merchant) {
+          throw new NotFoundException('Merchant not found');
+        }
+        payloadAccessToken.merchantId = merchant.id;
+        break;
+      case ERole.CASHIER:
+        break;
+      default:
+        throw new UnauthorizedException('Account not associate with any role');
     }
 
-    const validatePassword = await this.authService.compareHashed(
-      cmsLoginDto.password,
-      user.password,
-    );
-    if (!validatePassword) {
-      throw new UnauthorizedException("User's password is not valid");
-    }
+    const token = await this.authService.getAccessToken(payloadAccessToken);
 
-    const token = await this.authService.getAccessToken(user.id, 'cms');
-    return { user, token };
+    return {
+      message: 'Success sign in',
+      data: {
+        ...account,
+        token,
+      },
+    };
   }
 
   @ApiBearerAuth()
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@GetCurrentUser() user: CurrentUser) {
-    return user;
+  async me(@GetCurrentUser() currentUser: CurrentUser): Promise<TResponseApi> {
+    const account = await this.accountService.findByUsername(currentUser.sub);
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+    return {
+      message: 'Success to get current user data',
+      data: account,
+    };
   }
 }

@@ -5,9 +5,8 @@ import * as Joi from 'joi';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppExceptionFilter, AppResponseInterceptor } from '@app/common';
 import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
-import { CmsUserModule } from './cms-user/cms-user.module';
-import { AddressModule } from './address/address.module';
+import { AccountModule } from './account/account.module';
+import { CustomerModule } from './customer/customer.module';
 import { MerchantModule } from './merchant/merchant.module';
 
 @Module({
@@ -25,9 +24,8 @@ import { MerchantModule } from './merchant/merchant.module';
       }),
     }),
     AuthModule,
-    UserModule,
-    CmsUserModule,
-    AddressModule,
+    AccountModule,
+    CustomerModule,
     MerchantModule,
   ],
   controllers: [AppController],
