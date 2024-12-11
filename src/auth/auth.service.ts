@@ -1,7 +1,7 @@
 import { CurrentUser } from '@app/common';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
+import * as crypto from 'crypto'
 
 @Injectable()
 export class AuthService {
@@ -40,5 +40,39 @@ export class AuthService {
         bcryptError: error,
       });
     }
+  }
+
+  async jwtSignAsync(payload: any, options?: JwtSignOptions) {
+    try {
+      return await this.jwtService.signAsync(payload, options);
+    } catch (error) {
+      throw new InternalServerErrorException({
+        message: 'Fail to create JWT token',
+        jwtError: error,
+      });
+    }
+  }
+
+  async jwtVerifyAsync(token: string) {
+    try {
+      return await this.jwtService.verifyAsync(token);
+    } catch (error) {
+      throw new InternalServerErrorException({
+        message: 'Fail to verify JWT token. Token either expired or malformed',
+        jwtError: error,
+      });
+    }
+  }
+
+  async encrypt() {
+    cryp
+    const encryptedData = crypto.publicEncrypt(
+      {
+          key: publicKey,
+          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+          oaepHash: "sha256",
+      },
+      Buffer.from(data)
+  );
   }
 }

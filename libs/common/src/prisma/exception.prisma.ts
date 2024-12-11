@@ -25,8 +25,6 @@ export class PrismaException extends InternalServerErrorException {
       msg = `Fail to connect to some record. Please check the id and make sure the record exist.`;
     }
 
-    msg = 'Fail to do DB operation';
-
     super({ message: msg, dbError: error.message || error });
     this.logger.error(error);
   }

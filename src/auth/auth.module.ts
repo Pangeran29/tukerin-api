@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
 import { AccountModule } from 'src/account/account.module';
 import { MerchantModule } from 'src/merchant/merchant.module';
 import { CustomerModule } from 'src/customer/customer.module';
+import { CashierModule } from 'src/cashier/cashier.module';
 
 @Module({
   controllers: [AuthController],
@@ -16,6 +17,7 @@ import { CustomerModule } from 'src/customer/customer.module';
     AccountModule,
     forwardRef(()=>CustomerModule),
     forwardRef(()=>MerchantModule),
+    forwardRef(()=>CashierModule),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

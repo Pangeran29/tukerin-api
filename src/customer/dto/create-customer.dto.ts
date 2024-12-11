@@ -1,5 +1,5 @@
 import { Customer } from '@prisma/client';
-import { IsEmail, IsNotEmpty, IsPositive, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsPhoneNumber, IsPositive, IsString } from 'class-validator';
 import { CreateAccountDto } from 'src/account/dto/create-account.dto';
 
 export class CreateCustomerDto extends CreateAccountDto implements Partial<Customer> {
@@ -14,6 +14,7 @@ export class CreateCustomerDto extends CreateAccountDto implements Partial<Custo
 
   @IsNotEmpty()
   @IsString()
+  @IsPhoneNumber()
   phoneNumber: string;
 
   @IsNotEmpty()

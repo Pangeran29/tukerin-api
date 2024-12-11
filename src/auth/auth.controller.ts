@@ -14,8 +14,9 @@ import { CurrentUser, GetCurrentUser, JwtAuthGuard } from '@app/common';
 import { AccountService } from 'src/account/account.service';
 import { CustomerService } from 'src/customer/customer.service';
 import { MerchantService } from 'src/merchant/merchant.service';
-import { ERole } from '@prisma/client';
+import { Cashier, ERole } from '@prisma/client';
 import { TResponseApi } from '@app/common/type/response-api.type';
+import { CashierService } from 'src/cashier/cashier.service';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -25,6 +26,7 @@ export class AuthController {
     private readonly accountService: AccountService,
     private readonly customerService: CustomerService,
     private readonly merchantService: MerchantService,
+    private readonly cashierService: CashierService,
   ) {}
 
   @Post('sign-in')
@@ -72,6 +74,11 @@ export class AuthController {
         payloadAccessToken.merchantId = merchant.id;
         break;
       case ERole.CASHIER:
+        const cashier = await this.cashierService.findByAccountId(account.id);
+        if (!cashier) {
+          throw new NotFoundException('Cashier not found');
+        }
+        payloadAccessToken.cashierId = cashier.id;
         break;
       default:
         throw new UnauthorizedException('Account not associate with any role');

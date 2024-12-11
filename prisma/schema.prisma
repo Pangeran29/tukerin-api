@@ -7,17 +7,217 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Account {
+  id        Int        @id @default(autoincrement())
+  username  String     @unique
+  password  String
+  role      ERole
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  Cashier   Cashier[]
+  Customer  Customer[]
+  Merchant  Merchant[]
+}
+
+model Merchant {
+  id                  Int                  @id @default(autoincrement())
+  accountId           Int
+  businessName        String
+  businessEmail       String
+  businessPhoneNumber String
+  businessField       String
+  businessAddress     String
+  provinceId          Int
+  regencyId           Int
+  districtId          Int
+  villageId           Int
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  Cashier             Cashier[]
+  CustomerOnMerchant  CustomerOnMerchant[]
+  Account             Account              @relation(fields: [accountId], references: [id])
+  PointCatalogue      PointCatalogue[]
+  PointExchange       PointExchange[]
+  RewardCatalogue     RewardCatalogue[]
+  RewardExchange      RewardExchange[]
+}
+
+model Customer {
+  id                 Int                  @id @default(autoincrement())
+  accountId          Int
+  email              String
+  name               String
+  phoneNumber        String
+  address            String?
+  points             Int                  @default(0)
+  provinceId         Int
+  regencyId          Int
+  districtId         Int
+  villageId          Int
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  Account            Account              @relation(fields: [accountId], references: [id])
+  CustomerOnMerchant CustomerOnMerchant[]
+  PointExchange      PointExchange[]
+  RewardExchange     RewardExchange[]
+}
+
+model Cashier {
+  id                 Int             @id @default(autoincrement())
+  accountId          Int
+  name               String
+  email              String
+  phoneNumber        String
+  belongToMerchantId Int
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  Account            Account         @relation(fields: [accountId], references: [id])
+  Merchant           Merchant        @relation(fields: [belongToMerchantId], references: [id])
+  PointExchange      PointExchange[]
+}
+
+model CustomerOnMerchant {
+  id         Int      @id @default(autoincrement())
+  merchantId Int
+  customerId Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  Customer   Customer @relation(fields: [customerId], references: [id])
+  Merchant   Merchant @relation(fields: [merchantId], references: [id])
+}
+
+model PointExchange {
+  id                            Int                             @id @default(autoincrement())
+  uuid                          String                          @unique @default(uuid())
+  merchantId                    Int
+  cashierId                     Int
+  customerId                    Int?
+  totalClaimPoint               Int
+  claimedAt                     DateTime?
+  createdAt                     DateTime                        @default(now())
+  updatedAt                     DateTime                        @updatedAt
+  PointCatalogueOnPointExchange PointCatalogueOnPointExchange[]
+  Cashier                       Cashier                         @relation(fields: [cashierId], references: [id])
+  Customer                      Customer?                       @relation(fields: [customerId], references: [id])
+  Merchant                      Merchant                        @relation(fields: [merchantId], references: [id])
+}
+
+model PointCatalogue {
+  id                            Int                             @id @default(autoincrement())
+  title                         String
+  description                   String
+  termAndCondition              String
+  point                         Int
+  EPointType                    EPointType
+  merchantId                    Int
+  createdAt                     DateTime                        @default(now())
+  updatedAt                     DateTime                        @updatedAt
+  Merchant                      Merchant                        @relation(fields: [merchantId], references: [id])
+  PointCatalogueOnPointExchange PointCatalogueOnPointExchange[]
+}
+
+model PointCatalogueOnPointExchange {
+  id               Int            @id @default(autoincrement())
+  pointExchangeId  Int
+  pointCatalogueId Int
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  PointCatalogue   PointCatalogue @relation(fields: [pointCatalogueId], references: [id], map: "fk_point_catalogue")
+  PointExchange    PointExchange  @relation(fields: [pointExchangeId], references: [id], map: "fk_point_exchange")
+}
+
+model RewardExchange {
+  id                Int             @id @default(autoincrement())
+  merchantId        Int
+  customerId        Int
+  status            EShippingStatus
+  waitingApprovalAt DateTime?
+  processedAt       DateTime?
+  deliveredAt       DateTime?
+  arrivedAt         DateTime?
+  receivedAt        DateTime?
+  finishedAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  rewardCatalogueId Int
+  Customer          Customer        @relation(fields: [customerId], references: [id])
+  Merchant          Merchant        @relation(fields: [merchantId], references: [id])
+  RewardCatalogue   RewardCatalogue @relation(fields: [rewardCatalogueId], references: [id])
+}
+
+model RewardCatalogue {
+  id               Int              @id @default(autoincrement())
+  title            String
+  description      String
+  termAndCondition String
+  pricePoint       Int
+  rewardType       ERewardType
+  merchantId       Int
+  stock            Int
+  maxDailyRedeem   Int
+  maxMonthlyRedeem Int
+  viewOrder        Int
+  periodeStart     DateTime
+  periodeEnd       DateTime
+  isFeatured       Boolean          @default(false)
+  isFree           Boolean          @default(false)
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  Merchant         Merchant         @relation(fields: [merchantId], references: [id])
+  RewardExchange   RewardExchange[]
+}
+
+model Province {
+  id        Int       @id @default(autoincrement())
+  name      String
+  altName   String?
+  latitude  String?
+  longitude String?
+  Regency   Regency[]
+}
+
+model Regency {
+  id         Int        @id @default(autoincrement())
+  provinceId Int
+  name       String
+  altName    String?
+  latitude   String?
+  longitude  String?
+  District   District[]
+  Province   Province   @relation(fields: [provinceId], references: [id])
+}
+
+model District {
+  id        Int       @id @default(autoincrement())
+  regencyId Int
+  name      String
+  altName   String?
+  latitude  String?
+  longitude String?
+  Regency   Regency   @relation(fields: [regencyId], references: [id])
+  Village   Village[]
+}
+
+model Village {
+  id         Int      @id @default(autoincrement())
+  districtId Int
+  name       String
+  altName    String?
+  latitude   String?
+  longitude  String?
+  District   District @relation(fields: [districtId], references: [id])
+}
+
 enum ERewardType {
   PHYSICAL_GOOD
   VOUCHER
-  FREE
 }
 
 enum EShippingStatus {
   WAITING_APPROVAL
   PROCESSED
-  DELIVED
-  ARRIVED
+  DELIVERED
   RECEIVED
 }
 
@@ -27,214 +227,7 @@ enum ERole {
   CASHIER
 }
 
-model Account {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String
-  role      ERole
-  createdAt DateTime @default(now()) 
-  updatedAt DateTime @updatedAt
-
-  Merchant Merchant[]
-  Customer Customer[]
-  Cashier  Cashier[]
-}
-
-model Merchant {
-  id                  Int      @id @default(autoincrement())
-  accountId           Int
-  businessName        String   
-  businessEmail       String   
-  businessPhoneNumber String   
-  businessField       String   
-  businessAddress     String   
-  provinceId          Int      
-  regencyId           Int      
-  districtId          Int      
-  villageId           Int      
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  Account                 Account                   @relation(fields: [accountId], references: [id])
-  PointExchange           PointExchange[]
-  PointExchangeCatalogue  PointExchangeCatalogue[]
-  RewardExchange          RewardExchange[]
-  RewardExchangeCatalogue RewardExchangeCatalogue[]
-  Cashier                 Cashier[]
-  CustomerOnMerchant      CustomerOnMerchant[]
-}
-
-model Customer {
-  id          Int     @id @default(autoincrement())
-  accountId   Int     
-  email       String 
-  name        String
-  phoneNumber String  
-  address     String?
-  points      Int     @default(0)
-
-  provinceId Int      
-  regencyId  Int      
-  districtId Int      
-  villageId  Int      
-  createdAt  DateTime @default(now()) 
-  updatedAt  DateTime @updatedAt
-
-  Account            Account              @relation(fields: [accountId], references: [id])
-  PointExchange      PointExchange[]
-  RewardExchange     RewardExchange[]
-  CustomerOnMerchant CustomerOnMerchant[]
-}
-
-model Cashier {
-  id                 Int      @id @default(autoincrement())
-  accountId          Int     
-  name               String
-  email              String?
-  belongToMerchantId Int     
-  createdAt          DateTime @default(now()) 
-  updatedAt          DateTime @updatedAt
-
-  Account       Account         @relation(fields: [accountId], references: [id])
-  Merchant      Merchant        @relation(fields: [belongToMerchantId], references: [id])
-  PointExchange PointExchange[]
-}
-
-model CustomerOnMerchant {
-  id         Int      @id @default(autoincrement())
-  merchantId Int      
-  customerId Int      
-  createdAt  DateTime @default(now()) 
-  updatedAt  DateTime @updatedAt
-
-  Merchant Merchant @relation(fields: [merchantId], references: [id])
-  Customer Customer @relation(fields: [customerId], references: [id])
-}
-
-model PointExchange {
-  id              Int      @id @default(autoincrement())
-  merchantId      Int?     
-  cashierId       Int?     
-  customerId      Int?     
-  totalClaimPoint Int      
-  isClaimed       Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  Merchant                              Merchant?                               @relation(fields: [merchantId], references: [id])
-  Cashier                               Cashier?                                @relation(fields: [cashierId], references: [id])
-  Customer                              Customer?                               @relation(fields: [customerId], references: [id])
-  PointExchangeCatalogueOnPointExchange PointExchangeCatalogueOnPointExchange[]
-}
-
-model PointExchangeCatalogue {
-  id               Int      @id @default(autoincrement())
-  title            String
-  description      String
-  termAndCondition String   
-  point            Int
-  merchantId       Int      
-  createdAt        DateTime @default(now()) 
-  updatedAt        DateTime @updatedAt
-
-  Merchant                              Merchant                                @relation(fields: [merchantId], references: [id])
-  PointExchangeCatalogueOnPointExchange PointExchangeCatalogueOnPointExchange[]
-}
-
-model PointExchangeCatalogueOnPointExchange {
-  id                       Int      @id @default(autoincrement())
-  pointExchangeId          Int      
-  pointExchangeCatalogueId Int      
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
-
-  PointExchange          PointExchange          @relation(fields: [pointExchangeId], references: [id], map: "fk_point_exchange")
-  PointExchangeCatalogue PointExchangeCatalogue @relation(fields: [pointExchangeCatalogueId], references: [id], map: "fk_point_exchange_catalogue")
-}
-
-model RewardExchange {
-  id                        Int             @id @default(autoincrement())
-  merchantId                Int?            
-  rewardExchangeCatalogueId Int             
-  customerId                Int             
-  status                    EShippingStatus
-  waitingApprovalAt         DateTime?       
-  processedAt               DateTime?       
-  deliveredAt               DateTime?       
-  arrivedAt                 DateTime?       
-  receivedAt                DateTime?       
-  createdAt                 DateTime        @default(now()) 
-  updatedAt                 DateTime        @updatedAt
-
-  Merchant                Merchant?               @relation(fields: [merchantId], references: [id])
-  RewardExchangeCatalogue RewardExchangeCatalogue @relation(fields: [rewardExchangeCatalogueId], references: [id])
-  Customer                Customer                @relation(fields: [customerId], references: [id])
-}
-
-model RewardExchangeCatalogue {
-  id               Int         @id @default(autoincrement())
-  title            String
-  description      String
-  termAndCondition String      
-  pricePoint       Int         
-  rewardType       ERewardType
-  merchantId       Int?        
-  stock            Int
-  maxDailyRedeem   Int         
-  maxMonthlyRedeem Int         
-  viewOrder        Int         
-  periodeStart     DateTime    
-  periodeEnd       DateTime    
-  isFeatured       Int         
-  isActive         Boolean     
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-
-  Merchant       Merchant?        @relation(fields: [merchantId], references: [id])
-  RewardExchange RewardExchange[]
-}
-
-model Province {
-  id        Int     @id @default(autoincrement())
-  name      String
-  altName   String? 
-  latitude  String?
-  longitude String?
-
-  Regency Regency[]
-}
-
-model Regency {
-  id         Int     @id @default(autoincrement())
-  provinceId Int     
-  name       String
-  altName    String? 
-  latitude   String?
-  longitude  String?
-
-  Province Province   @relation(fields: [provinceId], references: [id])
-  District District[]
-}
-
-model District {
-  id        Int     @id @default(autoincrement())
-  regencyId Int     
-  name      String
-  altName   String? 
-  latitude  String?
-  longitude String?
-
-  Regency Regency   @relation(fields: [regencyId], references: [id])
-  Village Village[]
-}
-
-model Village {
-  id         Int     @id @default(autoincrement())
-  districtId Int     
-  name       String
-  altName    String? 
-  latitude   String?
-  longitude  String?
-
-  District District @relation(fields: [districtId], references: [id])
+enum EPointType {
+  BY_PRICE
+  BY_MENU
 }

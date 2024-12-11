@@ -1,11 +1,14 @@
 -- CreateEnum
-CREATE TYPE "ERewardType" AS ENUM ('PHYSICAL_GOOD', 'VOUCHER', 'FREE');
+CREATE TYPE "ERewardType" AS ENUM ('PHYSICAL_GOOD', 'VOUCHER');
 
 -- CreateEnum
-CREATE TYPE "EShippingStatus" AS ENUM ('WAITING_APPROVAL', 'PROCESSED', 'DELIVED', 'ARRIVED', 'RECEIVED');
+CREATE TYPE "EShippingStatus" AS ENUM ('WAITING_APPROVAL', 'PROCESSED', 'DELIVERED', 'RECEIVED');
 
 -- CreateEnum
 CREATE TYPE "ERole" AS ENUM ('CUSTOMER', 'MERCHANT', 'CASHIER');
+
+-- CreateEnum
+CREATE TYPE "EPointType" AS ENUM ('BY_PRICE', 'BY_MENU');
 
 -- CreateTable
 CREATE TABLE "Account" (
@@ -62,7 +65,8 @@ CREATE TABLE "Cashier" (
     "id" SERIAL NOT NULL,
     "accountId" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
-    "email" TEXT,
+    "email" TEXT NOT NULL,
+    "phoneNumber" TEXT NOT NULL,
     "belongToMerchantId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -84,11 +88,12 @@ CREATE TABLE "CustomerOnMerchant" (
 -- CreateTable
 CREATE TABLE "PointExchange" (
     "id" SERIAL NOT NULL,
-    "merchantId" INTEGER,
-    "cashierId" INTEGER,
+    "uuid" TEXT NOT NULL,
+    "merchantId" INTEGER NOT NULL,
+    "cashierId" INTEGER NOT NULL,
     "customerId" INTEGER,
     "totalClaimPoint" INTEGER NOT NULL,
-    "isClaimed" BOOLEAN NOT NULL DEFAULT false,
+    "claimedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -96,35 +101,35 @@ CREATE TABLE "PointExchange" (
 );
 
 -- CreateTable
-CREATE TABLE "PointExchangeCatalogue" (
+CREATE TABLE "PointCatalogue" (
     "id" SERIAL NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "termAndCondition" TEXT NOT NULL,
     "point" INTEGER NOT NULL,
+    "pointType" "EPointType" NOT NULL,
     "merchantId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "PointExchangeCatalogue_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "PointCatalogue_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "PointExchangeCatalogueOnPointExchange" (
+CREATE TABLE "PointCatalogueOnPointExchange" (
     "id" SERIAL NOT NULL,
     "pointExchangeId" INTEGER NOT NULL,
-    "pointExchangeCatalogueId" INTEGER NOT NULL,
+    "pointCatalogueId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "PointExchangeCatalogueOnPointExchange_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "PointCatalogueOnPointExchange_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "RewardExchange" (
     "id" SERIAL NOT NULL,
-    "merchantId" INTEGER,
-    "rewardExchangeCatalogueId" INTEGER NOT NULL,
+    "merchantId" INTEGER NOT NULL,
     "customerId" INTEGER NOT NULL,
     "status" "EShippingStatus" NOT NULL,
     "waitingApprovalAt" TIMESTAMP(3),
@@ -132,33 +137,36 @@ CREATE TABLE "RewardExchange" (
     "deliveredAt" TIMESTAMP(3),
     "arrivedAt" TIMESTAMP(3),
     "receivedAt" TIMESTAMP(3),
+    "finishedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "rewardCatalogueId" INTEGER NOT NULL,
 
     CONSTRAINT "RewardExchange_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "RewardExchangeCatalogue" (
+CREATE TABLE "RewardCatalogue" (
     "id" SERIAL NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "termAndCondition" TEXT NOT NULL,
     "pricePoint" INTEGER NOT NULL,
     "rewardType" "ERewardType" NOT NULL,
-    "merchantId" INTEGER,
+    "merchantId" INTEGER NOT NULL,
     "stock" INTEGER NOT NULL,
     "maxDailyRedeem" INTEGER NOT NULL,
     "maxMonthlyRedeem" INTEGER NOT NULL,
     "viewOrder" INTEGER NOT NULL,
     "periodeStart" TIMESTAMP(3) NOT NULL,
     "periodeEnd" TIMESTAMP(3) NOT NULL,
-    "isFeatured" INTEGER NOT NULL,
-    "isActive" BOOLEAN NOT NULL,
+    "isFeatured" BOOLEAN NOT NULL DEFAULT false,
+    "isFree" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "RewardExchangeCatalogue_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "RewardCatalogue_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -211,6 +219,9 @@ CREATE TABLE "Village" (
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_username_key" ON "Account"("username");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "PointExchange_uuid_key" ON "PointExchange"("uuid");
+
 -- AddForeignKey
 ALTER TABLE "Merchant" ADD CONSTRAINT "Merchant_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "Account"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -224,40 +235,40 @@ ALTER TABLE "Cashier" ADD CONSTRAINT "Cashier_accountId_fkey" FOREIGN KEY ("acco
 ALTER TABLE "Cashier" ADD CONSTRAINT "Cashier_belongToMerchantId_fkey" FOREIGN KEY ("belongToMerchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CustomerOnMerchant" ADD CONSTRAINT "CustomerOnMerchant_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "CustomerOnMerchant" ADD CONSTRAINT "CustomerOnMerchant_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PointExchange" ADD CONSTRAINT "PointExchange_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "CustomerOnMerchant" ADD CONSTRAINT "CustomerOnMerchant_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PointExchange" ADD CONSTRAINT "PointExchange_cashierId_fkey" FOREIGN KEY ("cashierId") REFERENCES "Cashier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "PointExchange" ADD CONSTRAINT "PointExchange_cashierId_fkey" FOREIGN KEY ("cashierId") REFERENCES "Cashier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PointExchange" ADD CONSTRAINT "PointExchange_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PointExchangeCatalogue" ADD CONSTRAINT "PointExchangeCatalogue_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PointExchange" ADD CONSTRAINT "PointExchange_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PointExchangeCatalogueOnPointExchange" ADD CONSTRAINT "fk_point_exchange" FOREIGN KEY ("pointExchangeId") REFERENCES "PointExchange"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PointCatalogue" ADD CONSTRAINT "PointCatalogue_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PointExchangeCatalogueOnPointExchange" ADD CONSTRAINT "fk_point_exchange_catalogue" FOREIGN KEY ("pointExchangeCatalogueId") REFERENCES "PointExchangeCatalogue"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PointCatalogueOnPointExchange" ADD CONSTRAINT "fk_point_catalogue" FOREIGN KEY ("pointCatalogueId") REFERENCES "PointCatalogue"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "RewardExchange" ADD CONSTRAINT "RewardExchange_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "RewardExchange" ADD CONSTRAINT "RewardExchange_rewardExchangeCatalogueId_fkey" FOREIGN KEY ("rewardExchangeCatalogueId") REFERENCES "RewardExchangeCatalogue"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PointCatalogueOnPointExchange" ADD CONSTRAINT "fk_point_exchange" FOREIGN KEY ("pointExchangeId") REFERENCES "PointExchange"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RewardExchange" ADD CONSTRAINT "RewardExchange_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "RewardExchangeCatalogue" ADD CONSTRAINT "RewardExchangeCatalogue_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "RewardExchange" ADD CONSTRAINT "RewardExchange_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RewardExchange" ADD CONSTRAINT "RewardExchange_rewardCatalogueId_fkey" FOREIGN KEY ("rewardCatalogueId") REFERENCES "RewardCatalogue"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RewardCatalogue" ADD CONSTRAINT "RewardCatalogue_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "Merchant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Regency" ADD CONSTRAINT "Regency_provinceId_fkey" FOREIGN KEY ("provinceId") REFERENCES "Province"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

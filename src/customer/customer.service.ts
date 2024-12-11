@@ -52,4 +52,14 @@ export class CustomerService {
       throw new PrismaException(error);
     }
   }
+
+  async findById(customerId: number) {
+    try {
+      return await this.prismaService.customer.findFirst({
+        where: { id: customerId },
+      });
+    } catch (error) {
+      throw new PrismaException(error);
+    }
+  }
 }

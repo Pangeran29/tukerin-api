@@ -1,5 +1,5 @@
 import { Merchant } from '@prisma/client';
-import { IsEmail, IsNotEmpty, IsPositive, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsPhoneNumber, IsPositive, IsString } from 'class-validator';
 import { CreateAccountDto } from 'src/account/dto/create-account.dto';
 
 export class CreateMerchantDto
@@ -16,6 +16,7 @@ export class CreateMerchantDto
 
   @IsString()
   @IsNotEmpty()
+  @IsPhoneNumber()
   businessPhoneNumber: string;
 
   @IsString()

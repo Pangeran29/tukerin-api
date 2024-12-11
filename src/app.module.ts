@@ -8,6 +8,12 @@ import { AuthModule } from './auth/auth.module';
 import { AccountModule } from './account/account.module';
 import { CustomerModule } from './customer/customer.module';
 import { MerchantModule } from './merchant/merchant.module';
+import { RewardModule } from './reward/reward.module';
+import { PointModule } from './point/point.module';
+import { PointExchangeModule } from './point-exchange/point-exchange.module';
+import { RewardExchangeModule } from './reward-exchange/reward-exchange.module';
+import { CashierModule } from './cashier/cashier.module';
+import { PointOnPointExchangeModule } from './point-on-point-exchange/point-on-point-exchange.module';
 
 @Module({
   imports: [
@@ -27,6 +33,12 @@ import { MerchantModule } from './merchant/merchant.module';
     AccountModule,
     CustomerModule,
     MerchantModule,
+    RewardModule,
+    PointModule,
+    PointExchangeModule,
+    RewardExchangeModule,
+    CashierModule,
+    PointOnPointExchangeModule,
   ],
   controllers: [AppController],
   providers: [
